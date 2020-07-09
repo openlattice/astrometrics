@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 
-import AstrometricsIcon from '../icons/AstrometricsIcon';
+import ScoutIcon from '../icons/ScoutIcon';
 
 const Wrapper = styled.div`
   display: flex;
@@ -52,14 +52,14 @@ export default class UnderMaintenance extends React.Component {
     return (
       <Wrapper>
         <LogoTitleWrapperLink>
-          <AstrometricsIcon />
+          <ScoutIcon />
           <AppTitle>
-            Astrometrics
+            Scout
           </AppTitle>
         </LogoTitleWrapperLink>
         <Text>
           <span>
-            <span>Astrometrics is currently under maintenance. Please check back later, or either email </span>
+            <span>Scout is currently under maintenance. Please check back later, or either email </span>
             <a href="mailto:support@openlattice.com">support@openlattice.com</a>
             <span> or call 650-597-2989 if you have any questions.</span>
           </span>

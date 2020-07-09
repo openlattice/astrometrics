@@ -16,7 +16,7 @@ import { bindActionCreators } from 'redux';
 import AppNavigationContainer from './AppNavigationContainer';
 import { switchOrganization } from './AppActions';
 
-import AstrometricsIcon from '../../components/icons/AstrometricsIcon';
+import ScoutIcon from '../../components/icons/ScoutIcon';
 import UsernameAndIcon from '../../components/icons/UsernameAndIcon';
 import * as Routes from '../../core/router/Routes';
 import { orgSelectStyles } from '../../core/style/OrgSelectStyles';
@@ -174,9 +174,9 @@ class AppHeaderContainer extends Component<Props> {
     return (
       <LeftSideContentWrapper>
         <LogoTitleWrapperLink to={Routes.MAP_ROUTE}>
-          <AstrometricsIcon />
+          <ScoutIcon />
           <AppTitle>
-            Astrometrics
+            Scout
           </AppTitle>
         </LogoTitleWrapperLink>
         <AppNavigationContainer isAdmin={isAdmin} />

@@ -28,7 +28,7 @@ import Spinner from '../../components/spinner/Spinner';
 import * as Routes from '../../core/router/Routes';
 import { APP_CONTAINER_WIDTH, HEADER_HEIGHT } from '../../core/style/Sizes';
 import { termsAreAccepted } from '../../utils/CookieUtils';
-import { APP_NAME } from '../../utils/constants/Constants';
+import { APP_NAME } from '../../utils/constants/DataModelConstants';
 import { APP, STATE } from '../../utils/constants/StateConstants';
 
 const AppContainerWrapper = styled.div`

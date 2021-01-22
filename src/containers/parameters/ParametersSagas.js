@@ -11,18 +11,20 @@ import {
   select,
   takeEvery
 } from '@redux-saga/core/effects';
-import { DataApi, SearchApi } from 'lattice';
 import {
-  fromJS,
   List,
   Map,
-  OrderedMap
+  OrderedMap,
+  fromJS
 } from 'immutable';
+import {
+  DataApiActions,
+  DataApiSagas,
+  SearchApiActions,
+  SearchApiSagas,
+} from 'lattice-sagas';
 import type { SequenceAction } from 'redux-reqseq';
 
-import { getAppFromState, getEntitySetId } from '../../utils/AppUtils';
-import { formatNameIdForDisplay, formatDescriptionIdForDisplay, getEntityKeyId } from '../../utils/DataUtils';
-import { APP_TYPES, PROPERTY_TYPES } from '../../utils/constants/DataModelConstants';
 import {
   GEOCODE_ADDRESS,
   LOAD_DEPARTMENTS_AND_DEVICES,
@@ -32,7 +34,16 @@ import {
   reverseGeocodeCoordinates
 } from './ParametersActionFactory';
 
+import { getAppFromState, getEntitySetId } from '../../utils/AppUtils';
+import { formatDescriptionIdForDisplay, formatNameIdForDisplay, getEntityKeyId } from '../../utils/DataUtils';
+import { APP_TYPES, PROPERTY_TYPES } from '../../utils/constants/DataModelConstants';
+
 declare var __MAPBOX_TOKEN__;
+
+const { getEntitySetData } = DataApiActions;
+const { getEntitySetDataWorker } = DataApiSagas;
+const { searchEntityNeighborsWithFilter } = SearchApiActions;
+const { searchEntityNeighborsWithFilterWorker } = SearchApiSagas;
 
 const SACRAMENTO_LAT_LONG = '-121.4944,38.5816';
 const GEOCODING_API = 'https://api.mapbox.com/geocoding/v5/mapbox.places';
@@ -147,41 +158,83 @@ function* loadDepartmentsAndDevicesWorker(action :SequenceAction) :Generator<*, 
 
     const app = yield select(getAppFromState);
 
-    const agenciesEntitySetId = getEntitySetId(app, APP_TYPES.AGENCIES);
-    const devicesEntitySetId = getEntitySetId(app, APP_TYPES.CAMERAS);
+    const agenciesESID :UUID = getEntitySetId(app, APP_TYPES.AGENCIES);
+    const devicesESID :UUID = getEntitySetId(app, APP_TYPES.CAMERAS);
 
-    const [departments, devices] = yield all([
-      call(DataApi.getEntitySetData, agenciesEntitySetId),
-      call(DataApi.getEntitySetData, devicesEntitySetId)
-    ]);
+    const departmentsResponse = yield call(
+      getEntitySetDataWorker,
+      getEntitySetData({ entitySetId: agenciesESID })
+    );
+    if (departmentsResponse.error) throw departmentsResponse.error;
+    const departments :List = fromJS(departmentsResponse.data);
 
-    const immutableDepartments = fromJS(departments);
+    const agencyEKIDs = [];
+    departments.forEach((department :Map) => {
+      agencyEKIDs.push(getEntityKeyId(department));
+    });
 
-    const agencyEntityKeyIds = immutableDepartments.map(getEntityKeyId).toJS();
+    let deviceEKIDsByAgencyEKID :Map = Map();
+    if (agencyEKIDs.length) {
+      const response = yield call(searchEntityNeighborsWithFilterWorker, searchEntityNeighborsWithFilter({
+        entitySetId: agenciesESID,
+        filter: {
+          entityKeyIds: agencyEKIDs,
+          sourceEntitySetIds: [devicesESID],
+          destinationEntitySetIds: [devicesESID]
+        },
+        idsOnly: true
+      }));
+      if (response.error) throw response.error;
 
-    let devicesByAgencyEntityKeyId = {};
-    if (agencyEntityKeyIds.length) {
-      devicesByAgencyEntityKeyId = yield call(SearchApi.searchEntityNeighborsWithFilter, agenciesEntitySetId, {
-        entityKeyIds: agencyEntityKeyIds,
-        sourceEntitySetIds: [devicesEntitySetId],
-        destinationEntitySetIds: [devicesEntitySetId]
-      });
+      deviceEKIDsByAgencyEKID = fromJS(response.data)
+        .map((associationESIDToNeighborIdMap :Map) => {
+          const deviceEKIDs = List().withMutations((mutator) => {
+            associationESIDToNeighborIdMap.forEach((idsByDeviceESID :Map) => {
+              const deviceNeighborIdMaps = idsByDeviceESID.get(devicesESID, List());
+              deviceNeighborIdMaps.forEach((neighborIdMap :Map) => {
+                mutator.push(neighborIdMap.get('neighborId'));
+              });
+            });
+          });
+          return deviceEKIDs;
+        });
     }
-    devicesByAgencyEntityKeyId = fromJS(devicesByAgencyEntityKeyId);
 
-    let devicesByAgency = Map();
-
-    immutableDepartments.forEach((agency) => {
-      const id = agency.getIn([PROPERTY_TYPES.ID, 0]);
-
-      let deviceIds = List();
-      devicesByAgencyEntityKeyId.get(getEntityKeyId(agency), List()).forEach((deviceNeighbor) => {
-
-        const deviceId = deviceNeighbor.getIn(['neighborDetails', PROPERTY_TYPES.ID, 0]);
-        deviceIds = deviceIds.push(deviceId);
+    const deviceEKIDs = [];
+    deviceEKIDsByAgencyEKID.forEach((agencyDeviceEKIDs) => {
+      agencyDeviceEKIDs.forEach((agencyDeviceEKID :UUID) => {
+        deviceEKIDs.push(agencyDeviceEKID);
       });
+    });
 
-      devicesByAgency = devicesByAgency.set(id, deviceIds);
+    const devicesResponse = yield call(
+      getEntitySetDataWorker,
+      getEntitySetData({ entitySetId: devicesESID, entityKeyIds: deviceEKIDs })
+    );
+    if (devicesResponse.error) throw devicesResponse.error;
+    const devices :List = fromJS(devicesResponse.data);
+    const deviceByDeviceEKID :Map = Map().withMutations((mutator) => {
+      devices.forEach((device :Map) => {
+        mutator.set(getEntityKeyId(device), device);
+      });
+    });
+
+    const devicesByAgency = Map().withMutations((mutator) => {
+      departments.forEach((agency :Map) => {
+
+        const agencyId = agency.getIn([PROPERTY_TYPES.ID, 0]);
+        const agencyEKID = getEntityKeyId(agency);
+
+        const deviceIds :List = List().withMutations((listMutator) => {
+          deviceEKIDsByAgencyEKID.get(agencyEKID, List()).forEach((deviceEKID :UUID) => {
+            const device :Map = deviceByDeviceEKID.get(deviceEKID, Map());
+            const deviceId = device.getIn([PROPERTY_TYPES.ID, 0]);
+            listMutator.push(deviceId);
+          });
+        });
+
+        mutator.set(agencyId, deviceIds);
+      });
     });
 
     yield put(loadDepartmentsAndDevices.success(action.id, {

@@ -36,7 +36,6 @@ const {
   DONE_LOADING_AGENCIES,
   AGENCY_OPTIONS,
   DEVICE_OPTIONS,
-  DEVICES_BY_AGENCY,
   REVERSE_GEOCODED_COORDS
 } = SEARCH_PARAMETERS_FIELDS;
 
@@ -95,7 +94,6 @@ const INITIAL_STATE :Map<> = fromJS({
   [DONE_LOADING_AGENCIES]: false,
   [AGENCY_OPTIONS]: Map(),
   [DEVICE_OPTIONS]: Map(),
-  [DEVICES_BY_AGENCY]: Map(),
   [REVERSE_GEOCODED_COORDS]: Map()
 });
 
@@ -115,8 +113,7 @@ function reducer(state :Map<> = INITIAL_STATE, action :Object) {
         REQUEST: () => state.set(IS_LOADING_AGENCIES, true).set(DONE_LOADING_AGENCIES, false),
         SUCCESS: () => state
           .set(AGENCY_OPTIONS, action.value.departmentOptions)
-          .set(DEVICE_OPTIONS, action.value.deviceOptions)
-          .set(DEVICES_BY_AGENCY, action.value.devicesByAgency),
+          .set(DEVICE_OPTIONS, action.value.deviceOptions),
         FINALLY: () => state.set(IS_LOADING_AGENCIES, false).set(DONE_LOADING_AGENCIES, true)
       });
     }

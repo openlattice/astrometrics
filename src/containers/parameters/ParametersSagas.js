@@ -161,86 +161,19 @@ function* loadDepartmentsAndDevicesWorker(action :SequenceAction) :Generator<*, 
     const agenciesESID :UUID = getEntitySetId(app, APP_TYPES.AGENCIES);
     const devicesESID :UUID = getEntitySetId(app, APP_TYPES.CAMERAS);
 
-    const departmentsResponse = yield call(
-      getEntitySetDataWorker,
-      getEntitySetData({ entitySetId: agenciesESID })
-    );
-    if (departmentsResponse.error) throw departmentsResponse.error;
-    const departments :List = fromJS(departmentsResponse.data);
-
-    const agencyEKIDs = [];
-    departments.forEach((department :Map) => {
-      agencyEKIDs.push(getEntityKeyId(department));
-    });
-
-    let deviceEKIDsByAgencyEKID :Map = Map();
-    if (agencyEKIDs.length) {
-      const response = yield call(searchEntityNeighborsWithFilterWorker, searchEntityNeighborsWithFilter({
-        entitySetId: agenciesESID,
-        filter: {
-          entityKeyIds: agencyEKIDs,
-          sourceEntitySetIds: [devicesESID],
-          destinationEntitySetIds: [devicesESID]
-        },
-        idsOnly: true
-      }));
-      if (response.error) throw response.error;
-
-      deviceEKIDsByAgencyEKID = fromJS(response.data)
-        .map((associationESIDToNeighborIdMap :Map) => {
-          const deviceEKIDs = List().withMutations((mutator) => {
-            associationESIDToNeighborIdMap.forEach((idsByDeviceESID :Map) => {
-              const deviceNeighborIdMaps = idsByDeviceESID.get(devicesESID, List());
-              deviceNeighborIdMaps.forEach((neighborIdMap :Map) => {
-                mutator.push(neighborIdMap.get('neighborId'));
-              });
-            });
-          });
-          return deviceEKIDs;
-        });
-    }
-
-    const deviceEKIDs = [];
-    deviceEKIDsByAgencyEKID.forEach((agencyDeviceEKIDs) => {
-      agencyDeviceEKIDs.forEach((agencyDeviceEKID :UUID) => {
-        deviceEKIDs.push(agencyDeviceEKID);
-      });
-    });
-
-    const devicesResponse = yield call(
-      getEntitySetDataWorker,
-      getEntitySetData({ entitySetId: devicesESID, entityKeyIds: deviceEKIDs })
-    );
+    const [agenciesResponse, devicesResponse] = yield all([
+      call(getEntitySetDataWorker, getEntitySetData({ entitySetId: agenciesESID })),
+      call(getEntitySetDataWorker, getEntitySetData({ entitySetId: devicesESID })),
+    ]);
+    if (agenciesResponse.error) throw agenciesResponse.error;
     if (devicesResponse.error) throw devicesResponse.error;
+
+    const agencies :List = fromJS(agenciesResponse.data);
     const devices :List = fromJS(devicesResponse.data);
-    const deviceByDeviceEKID :Map = Map().withMutations((mutator) => {
-      devices.forEach((device :Map) => {
-        mutator.set(getEntityKeyId(device), device);
-      });
-    });
-
-    const devicesByAgency = Map().withMutations((mutator) => {
-      departments.forEach((agency :Map) => {
-
-        const agencyId = agency.getIn([PROPERTY_TYPES.ID, 0]);
-        const agencyEKID = getEntityKeyId(agency);
-
-        const deviceIds :List = List().withMutations((listMutator) => {
-          deviceEKIDsByAgencyEKID.get(agencyEKID, List()).forEach((deviceEKID :UUID) => {
-            const device :Map = deviceByDeviceEKID.get(deviceEKID, Map());
-            const deviceId = device.getIn([PROPERTY_TYPES.ID, 0]);
-            listMutator.push(deviceId);
-          });
-        });
-
-        mutator.set(agencyId, deviceIds);
-      });
-    });
 
     yield put(loadDepartmentsAndDevices.success(action.id, {
-      departmentOptions: getDataAsMap(departments),
-      deviceOptions: getDataAsMap(devices, true),
-      devicesByAgency
+      departmentOptions: getDataAsMap(agencies),
+      deviceOptions: getDataAsMap(devices, true)
     }));
   }
 

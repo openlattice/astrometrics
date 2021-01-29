@@ -48,7 +48,7 @@
     "lattice-ui-kit": "~0.32.1",
     "lodash": "~4.17.10",
     "loglevel": "~1.6.0",
-    "mapbox-gl": "^1.12.0",
+    "mapbox-gl": "^2.0.1",
     "moment": "~2.24.0",
     "papaparse": "^5.3.0",
     "polished": "~3.2.0",

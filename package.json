@@ -35,7 +35,7 @@
     "@mapbox/mapbox-sdk": "~0.11.0",
     "@redux-saga/core": "~1.0.0",
     "@types/mapbox-gl": "^1.11.1",
-    "axios": "~0.18.0",
+    "axios": "~0.21.1",
     "connected-react-router": "~6.4.0",
     "file-saver": "^2.0.2",
     "history": "~4.9.0",
@@ -111,7 +111,7 @@
     "stylelint-config-styled-components": "~0.1.1",
     "stylelint-processor-styled-components": "~1.9.0",
     "uuid": "~3.3.0",
-    "webpack": "~4.41.0",
+    "webpack": "~5.18.0",
     "webpack-cli": "~3.3.0",
     "webpack-dev-server": "~3.11.0",
     "webpack-hot-middleware": "~2.25.0"

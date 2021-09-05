@@ -25,7 +25,7 @@
   "dependencies": {
     "@atlaskit/modal-dialog": "8.0.4",
     "@babel/polyfill": "~7.7.0",
-    "@babel/runtime": "~7.7.0",
+    "@babel/runtime": "~7.15.4",
     "@fortawesome/fontawesome-svg-core": "~1.2.0",
     "@fortawesome/pro-light-svg-icons": "~5.7.0",
     "@fortawesome/pro-regular-svg-icons": "~5.7.0",

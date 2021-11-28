@@ -36,7 +36,7 @@
     "@redux-saga/core": "~1.0.0",
     "@types/mapbox-gl": "^1.11.1",
     "axios": "~0.21.1",
-    "connected-react-router": "~6.4.0",
+    "connected-react-router": "~6.9.2",
     "file-saver": "^2.0.2",
     "history": "~4.9.0",
     "immutable": "4.0.0-rc.9",

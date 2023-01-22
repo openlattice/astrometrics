@@ -57,7 +57,7 @@
     "react-mapbox-gl": "^4.8.6",
     "react-mapbox-gl-draw": "^2.0.4",
     "react-redux": "~6.0.0",
-    "react-router": "~5.0.0",
+    "react-router": "~6.7.0",
     "react-router-dom": "~5.0.0",
     "react-select": "3.0.8",
     "react-to-print": "^2.4.0",
